@@ -13,7 +13,7 @@ public abstract class Account {
 
     public Account(){
 
-        //this.balance = BigDecimal.ZERO;
+        this.balance = BigDecimal.ZERO;
     }
 
     public Account(String accountNo, String customerId, AccountType type, BigDecimal balance) {

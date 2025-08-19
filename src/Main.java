@@ -152,7 +152,7 @@ public class Main {
             Transaction transaction = new Transaction(transactionId,accountNo,TransactionType.WITHDRAWL, amount, LocalDateTime.now());
             transactions.add(transaction);
 
-            System.out.println("withdrawal successful");
+            System.out.println("Withdrawal successful! New balance: " + account.getBalance());
 
         }catch(InsufficientBalanceException e){
             System.out.println("Error: "+e.getMessage());
@@ -164,7 +164,7 @@ public class Main {
         String fromAccountNo = scanner.nextLine().trim();
 
         Account fromAccount = accounts.get(fromAccountNo);
-        if(fromAccount == null){
+        if (fromAccount == null) {
             System.out.println("Source account not found");
             return;
         }
@@ -173,29 +173,32 @@ public class Main {
         String toAccountNo = scanner.nextLine().trim();
 
         Account toccount = accounts.get(toAccountNo);
-        if(toccount == null){
+        if (toccount == null) {
             System.out.println("Source account not found");
             return;
         }
 
-        if(fromAccountNo.equals(toAccountNo)){
+        if (fromAccountNo.equals(toAccountNo)) {
             System.out.println("cannot transfer");
+            return;
         }
 
         System.out.println("Enter amount");
         String amountStr = scanner.nextLine().trim();
-        try{
+        Transaction transaction = null;
+        try {
             BigDecimal amount = new BigDecimal(amountStr);
             fromAccount.withdraw(amount);
             toccount.deposit(amount);
 
             String transactionId = generateTransactionId();
-            Transaction transaction = new Transaction(transactionId, fromAccountNo, TransactionType.TRANSFER, amount, LocalDateTime.now());
-        }catch(NumberFormatException e){
+            transaction = new Transaction(transactionId, fromAccountNo, TransactionType.TRANSFER, amount, LocalDateTime.now());
+        } catch (NumberFormatException e) {
             System.out.println("Invalid amount entered");
-        }catch (InsufficientBalanceException e){
-            System.out.println("Error: "+e.getMessage());
+        } catch (InsufficientBalanceException e) {
+            System.out.println("Error: " + e.getMessage());
         }
+        transactions.add(transaction);
     }
 
     private static void viewAccountDetails() {
@@ -245,7 +248,8 @@ public class Main {
                 .collect(Collectors.groupingBy(Transaction::getType, Collectors.counting()));
         System.out.println("\n == Transaction summary==");
         transactionSummary.forEach((type, count)->
-                System.out.println(type.getDisplayName()));
+                System.out.println(type.getDisplayName() + ": " + count));
+
 
 
     }
