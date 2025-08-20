@@ -55,6 +55,10 @@ public abstract class Account {
         this.balance = balance;
     }
 
+    public abstract BigDecimal getInterestRate();
+
+    public abstract BigDecimal getMinimalBalance();
+
     public abstract BigDecimal getInterest_rate();
 
     public abstract BigDecimal getMinimum_balance();

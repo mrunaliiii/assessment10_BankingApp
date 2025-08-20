@@ -223,36 +223,46 @@ public class Main {
 
     private static void viewTransactionHistory() {
 
-        System.out.println("Transaction history");
-        System.out.println("enter account number");
+        System.out.println("\n ---------- Transaction History --------");
+
+        System.out.println("enter account no: ");
         String accountNo = scanner.nextLine().trim();
 
         Account account = accounts.get(accountNo);
-        if(account==null){
-            System.out.println("account not found");
+        if (account == null){
+            System.out.println("Account No FOUND!!! ");
             return;
         }
-        List<Transaction> accountTransactions = transactions.stream().filter(t -> accountNo.equals(t.getAccountNo()))
+
+        List<Transaction> accountTransaction = transactions.stream()
+                .filter(t -> Objects.equals(accountNo, t.getAccountNo()))
+
                 .sorted(Comparator.comparing(Transaction::getTimestamp).reversed())
                 .toList();
 
-        if(accountTransactions.isEmpty()){
-            System.out.println("No transactions found");
-            return;
+        if (accountTransaction.isEmpty()){
+            System.out.println("No Transaction found!!!");
         }
 
-        for(Transaction transaction: accountTransactions){
+        for (Transaction transaction: accountTransaction){
             System.out.println(transaction.toString());
         }
-        Map<TransactionType, Long> transactionSummary = accountTransactions.stream()
+
+        Map<TransactionType, Long> transactionSummary = accountTransaction.stream()
                 .collect(Collectors.groupingBy(Transaction::getType, Collectors.counting()));
-        System.out.println("\n == Transaction summary==");
-        transactionSummary.forEach((type, count)->
-                System.out.println(type.getDisplayName() + ": " + count));
 
-
+        System.out.println("\n ---------- Transaction Summary --------");
+        transactionSummary.forEach((type,count)->
+                System.out.println(type.getDisplayName() + " : " + count + " Transaction"));
 
     }
+
+
+
+
+
+
+
 
     private static void createAccount() {
         System.out.println("Creating new account");
@@ -335,6 +345,9 @@ public class Main {
         customers.put(customerId, customer);
         System.out.println("Customer registered successfully.");
     }
+
+
+
 
     private static int getInput(){
         while(true){
