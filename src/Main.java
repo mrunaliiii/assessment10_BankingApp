@@ -50,8 +50,8 @@ public class Main {
 
         switch (choice){
             case 1:
-            registerCustomer();
-            break;
+                registerCustomer();
+                break;
             case 2:
                 createAccount();
                 break;
