@@ -235,10 +235,10 @@ public class Main {
         }
 
         List<Transaction> accountTransaction = transactions.stream()
-                .filter(t -> Objects.equals(accountNo, t.getAccountNo()))
+                .filter(t -> accountNo.equals(t.getAccountNo()))
 
                 .sorted(Comparator.comparing(Transaction::getTimestamp).reversed())
-                .toList();
+                .collect(Collectors.toList());
 
         if (accountTransaction.isEmpty()){
             System.out.println("No Transaction found!!!");
