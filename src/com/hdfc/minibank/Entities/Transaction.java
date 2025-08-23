@@ -1,6 +1,6 @@
-package Entities;
+package com.hdfc.minibank.Entities;
 
-import enums.TransactionType;
+import com.hdfc.minibank.enums.TransactionType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,7 +1,7 @@
-package Entities;
+package com.hdfc.minibank.Entities;
 
-import Exception.InsufficientBalanceException;
-import enums.AccountType;
+import com.hdfc.minibank.Exception.InsufficientBalanceException;
+import com.hdfc.minibank.enums.AccountType;
 
 import java.math.BigDecimal;
 

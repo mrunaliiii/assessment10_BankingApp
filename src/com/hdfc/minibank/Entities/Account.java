@@ -1,10 +1,10 @@
-package Entities;
+package com.hdfc.minibank.Entities;
 
-import enums.AccountType;
+import com.hdfc.minibank.enums.AccountType;
 
 import java.math.BigDecimal;
 import java.util.Objects;
-import Exception.*;
+import com.hdfc.minibank.Exception.*;
 public abstract class Account {
     private String accountNo;
     private String customerId;

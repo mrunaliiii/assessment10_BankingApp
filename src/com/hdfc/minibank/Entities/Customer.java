@@ -1,4 +1,4 @@
-package Entities;
+package com.hdfc.minibank.Entities;
 
 import java.time.LocalDate;
 import java.util.Objects;

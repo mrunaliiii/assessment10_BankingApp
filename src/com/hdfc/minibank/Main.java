@@ -1,15 +1,21 @@
-import Entities.*;
-import enums.TransactionType;
+package com.hdfc.minibank;
+
+import com.hdfc.minibank.Entities.*;
+import com.hdfc.minibank.dao.AccountDAO;
+import com.hdfc.minibank.dao.TransactionDAO;
+import com.hdfc.minibank.enums.TransactionType;
 
 import java.math.BigDecimal;
-import java.sql.SQLOutput;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import Exception.*;
+import com.hdfc.minibank.Exception.*;
+import com.hdfc.minibank.util.DBConnectionUtil;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
@@ -159,48 +165,117 @@ public class Main {
         }
     }
 
+//    private static void performTransfer() {
+//        System.out.println("enter source account number");
+//        String fromAccountNo = scanner.nextLine().trim();
+//
+//        Account fromAccount = accounts.get(fromAccountNo);
+//        if (fromAccount == null) {
+//            System.out.println("Source account not found");
+//            return;
+//        }
+//
+//        System.out.println("enter destination account number");
+//        String toAccountNo = scanner.nextLine().trim();
+//
+//        Account toccount = accounts.get(toAccountNo);
+//        if (toccount == null) {
+//            System.out.println("Source account not found");
+//            return;
+//        }
+//
+//        if (fromAccountNo.equals(toAccountNo)) {
+//            System.out.println("cannot transfer");
+//            return;
+//        }
+//
+//        System.out.println("Enter amount");
+//        String amountStr = scanner.nextLine().trim();
+//        Transaction transaction = null;
+//        try {
+//            BigDecimal amount = new BigDecimal(amountStr);
+//            fromAccount.withdraw(amount);
+//            toccount.deposit(amount);
+//
+//            String transactionId = generateTransactionId();
+//            transaction = new Transaction(transactionId, fromAccountNo, TransactionType.TRANSFER, amount, LocalDateTime.now());
+//        } catch (NumberFormatException e) {
+//            System.out.println("Invalid amount entered");
+//        } catch (InsufficientBalanceException e) {
+//            System.out.println("Error: " + e.getMessage());
+//        }
+//        transactions.add(transaction);
+//    }
+
     private static void performTransfer() {
-        System.out.println("enter source account number");
+        System.out.println("Enter source account number:");
         String fromAccountNo = scanner.nextLine().trim();
 
-        Account fromAccount = accounts.get(fromAccountNo);
-        if (fromAccount == null) {
-            System.out.println("Source account not found");
-            return;
-        }
-
-        System.out.println("enter destination account number");
+        System.out.println("Enter destination account number:");
         String toAccountNo = scanner.nextLine().trim();
 
-        Account toccount = accounts.get(toAccountNo);
-        if (toccount == null) {
-            System.out.println("Source account not found");
-            return;
-        }
-
         if (fromAccountNo.equals(toAccountNo)) {
-            System.out.println("cannot transfer");
+            System.out.println("Cannot transfer to the same account.");
             return;
         }
 
-        System.out.println("Enter amount");
+        System.out.println("Enter amount to transfer:");
         String amountStr = scanner.nextLine().trim();
-        Transaction transaction = null;
+
         try {
             BigDecimal amount = new BigDecimal(amountStr);
-            fromAccount.withdraw(amount);
-            toccount.deposit(amount);
 
-            String transactionId = generateTransactionId();
-            transaction = new Transaction(transactionId, fromAccountNo, TransactionType.TRANSFER, amount, LocalDateTime.now());
+            Connection conn = null; // ✅ Declare outside the try block
+            try {
+                conn = DBConnectionUtil.getConnection();
+                conn.setAutoCommit(false); // Begin transaction
+
+                AccountDAO accountDAO = new AccountDAO(conn);
+                TransactionDAO txnDAO = new TransactionDAO(conn);
+
+                Account fromAccount = accountDAO.getAccountByNumber(fromAccountNo);
+                Account toAccount = accountDAO.getAccountByNumber(toAccountNo);
+
+                if (fromAccount == null || toAccount == null) {
+                    System.out.println("One or both accounts not found.");
+                    conn.rollback();
+                    return;
+                }
+
+                if (fromAccount.getBalance().compareTo(amount) < 0) {
+                    System.out.println("Insufficient balance.");
+                    conn.rollback();
+                    return;
+                }
+
+                // Update balances
+                fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
+                toAccount.setBalance(toAccount.getBalance().add(amount));
+
+                accountDAO.updateBalance(fromAccount);
+                accountDAO.updateBalance(toAccount);
+
+                // Log transaction
+                String txnId = generateTransactionId();
+                Transaction txn = new Transaction(txnId, fromAccountNo, TransactionType.TRANSFER, amount, LocalDateTime.now());
+                txnDAO.saveTransaction(txn);
+
+                conn.commit(); // ✅ Commit the transaction
+                System.out.println("Transfer successful.");
+
+            } catch (Exception e) {
+                if (conn != null) conn.rollback(); // ✅ Rollback on error
+                System.out.println("Error during transfer: " + e.getMessage());
+            } finally {
+                if (conn != null) conn.close(); // ✅ Always close connection
+            }
+
         } catch (NumberFormatException e) {
-            System.out.println("Invalid amount entered");
-        } catch (InsufficientBalanceException e) {
-            System.out.println("Error: " + e.getMessage());
+            System.out.println("Invalid amount entered.");
+        } catch (SQLException e) {
+            System.out.println("Database error: " + e.getMessage());
         }
-        transactions.add(transaction);
     }
-
     private static void viewAccountDetails() {
         System.out.println("Account details");
         System.out.println("Enter account number");
@@ -312,28 +387,45 @@ public class Main {
     }
 
     private static void registerCustomer() {
-
         System.out.println("----Customer Registration---");
         System.out.println("Enter customer id");
-        String customerId  = scanner.nextLine().trim();
+        String customerId = scanner.nextLine().trim();
 
-        if(customers.containsKey(customerId)){
+        if (customers.containsKey(customerId)) {
             System.out.println("Customer already exists");
+            return;
         }
 
         System.out.println("Enter name");
         String name = scanner.nextLine().trim();
 
-        System.out.println("Enter email");
-        String email = scanner.nextLine().trim();
+        // Email validation
+        String email;
+        while (true) {
+            System.out.println("Enter email");
+            email = scanner.nextLine().trim();
+            if (email.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
+                break;
+            } else {
+                System.out.println("Invalid email format. Please try again.");
+            }
+        }
 
-        System.out.println("Enter phone");
-        String phone = scanner.nextLine().trim();
+        // Phone validation
+        String phone;
+        while (true) {
+            System.out.println("Enter phone (10 digits)");
+            phone = scanner.nextLine().trim();
+            if (phone.matches("^\\d{10}$")) {
+                break;
+            } else {
+                System.out.println("Invalid phone number. Please enter a 10-digit number.");
+            }
+        }
 
-        System.out.println("Enter dob");
+        System.out.println("Enter dob (yyyy-MM-dd)");
         String dobStr = scanner.nextLine().trim();
 
-        //1LocalDate dateOfBirth;
         LocalDate dateOfBirth;
         try {
             dateOfBirth = LocalDate.parse(dobStr, dateFormatter);
@@ -341,6 +433,7 @@ public class Main {
             System.out.println("Invalid date format. Registration failed.");
             return;
         }
+
         Customer customer = new Customer(customerId, name, email, phone, dateOfBirth);
         customers.put(customerId, customer);
         System.out.println("Customer registered successfully.");

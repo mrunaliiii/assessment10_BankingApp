@@ -1,4 +1,4 @@
-package enums;
+package com.hdfc.minibank.enums;
 
 public enum TransactionType {
     DEPOSIT("Deposit"),
